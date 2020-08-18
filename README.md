@@ -1,20 +1,20 @@
 # Rollup-TypeScript-Babel WebGL
 
-> WebGL Boilerplate using Typescript transpiled by babel, Rollup for bundling.
+> WebGL Boilerplate using Typescript transpiled by babel, Rollup for bundling. It supports: Minified bundle on release mode, Decidated testing server, all images are bundled as url, html, postcss, shader code written in glsl are bundled as text.
 
-## Build and start a server at port 3000
+## Build and start a server on port 3000
 
 ```shell
 npm start
 ```
 
-## Build `debug` build
+## Build "debug" build
 
 ```shell
 npm run build
 ```
 
-## Build `release` build
+## Build "release" build
 
 ```shell
 npm run release
