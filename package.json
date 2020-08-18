@@ -4,9 +4,10 @@
   "description": "WebGL Boilerplate using Typescript transpiled by babel, Rollup for bundling.",
   "scripts": {
     "start": "npm-run-all --parallel \"build:js -- --watch\" \"serve -- --config-port=3000\"",
-    "build": "npm run build:types && npm run build:js",
-    "release": "cross-env-shell NODE_ENV=production npm run build",
+    "build": "npm run build:types && npm run build:js --",
+    "release": "cross-env-shell NODE_ENV=production npm run build --",
     "serve": "node server/index.js",
+    "release:pages": "npm run release -- --config-isPagesRelease",
     "type-check": "tsc --noEmit",
     "type-check:watch": "npm run type-check -- --watch",
     "build:types": "tsc --emitDeclarationOnly",
@@ -24,8 +25,7 @@
     "rollup"
   ],
   "author": "Rafael de Souza Ferreira",
-  "main": "dist/rollup-plugin-babel.cjs.js",
-  "browser": "dist/rollup-plugin-babel.iife.js",
+  "browser": "dist/main.js",
   "types": "dist/types/index.d.ts",
   "license": "MIT",
   "bugs": {

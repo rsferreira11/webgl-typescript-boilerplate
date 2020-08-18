@@ -23,13 +23,19 @@ const extensions = [
 
 const CONFIG = {
   isProduction: process.env.NODE_ENV === 'production',
-  iifeWindowScope: 'RollupTypeScriptBabel',
-  buildPath: './dist',
-  isWatching: argv.watch
+  iifeWindowScope: 'WebGLBoilerplate',
+  buildPath: argv['config-distDir'] || './dist',
+  isWatching: argv.watch,
+  isPagesRelease: argv['config-isPagesRelease']
+}
+
+if (CONFIG.isPagesRelease) {
+  CONFIG.buildPath = './pages';
 }
 
 console.log("Rollup config. command line parameters:", JSON.stringify(argv, null, 2));
 console.log("Rollup config. Is Production:", CONFIG.isProduction);
+console.log("ROllup config. Destination diretory:", CONFIG.buildPath);
 
 const globalPlugins = [
   del({
@@ -108,16 +114,8 @@ export default {
   },
 
   output: [
-    // {
-    //   file: pkg.main,
-    //   format: 'cjs',
-    // },
-    // {
-    //   file: pkg.module,
-    //   format: 'es',
-    // },
     {
-      file: pkg.browser,
+      file: path.resolve(CONFIG.buildPath + pkg.browser.replace("dist", "/")),
       format: 'iife',
       name: CONFIG.iifeWindowScope,
       sourcemap: (CONFIG.isProduction ? 'nosources-source-map' : 'source-map'),
