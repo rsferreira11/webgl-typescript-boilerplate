@@ -5,6 +5,8 @@ export function imageImportTest() {
 
   image.src = testImage;
   image.onload = () => {
+    image.style.position = "absolute";
+    image.style.top = "0";
     document.body.appendChild(image);
     console.log("image added");
   };

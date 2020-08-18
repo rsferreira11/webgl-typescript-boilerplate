@@ -38,7 +38,7 @@ const globalPlugins = [
   }),
   // Add support to shaders as external files
   string({
-    include: "**/*.(glsl|frag|vertex)",
+    include: "**/*.(glsl|frag|vert)",
   }),
   // Allows node_modules resolution
   resolve({ extensions }),
