@@ -9,7 +9,7 @@ It supports:
 - all images are bundled as url.
 - Custom index.html linking hashed javascript.
 - postcss.
-- shader code written in glsl are bundled as text.
+- shader code written in glsl are bundled as text, enabling syntax highlight and linter in the external file.
 - Sample code with running webgl program: [preview](https://rsferreira11.github.io/webgl-typescript-boilerplate/pages/).
 - npm script to publish to github pages.
 - [gl-matrix](http://glmatrix.net/) for easier matrices handling.
