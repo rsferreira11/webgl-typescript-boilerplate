@@ -1,10 +1,13 @@
 precision mediump float;
+
 attribute vec3 position;
-attribute vec3 color;
-varying vec3 vColor;
+attribute vec2 uv;
+
+varying vec2 vUV;
+
 uniform mat4 matrix;
 
 void main() {
-    vColor = color;
-    gl_Position = matrix * vec4(position, 1);
+  vUV = uv;
+  gl_Position = matrix * vec4(position, 1);
 }
