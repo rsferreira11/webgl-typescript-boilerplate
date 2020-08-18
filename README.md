@@ -12,6 +12,7 @@ It supports:
 - shader code written in glsl are bundled as text.
 - Sample code with running webgl program: [preview](https://rsferreira11.github.io/webgl-typescript-boilerplate/pages/).
 - npm script to publish to github pages.
+- [gl-matrix](http://glmatrix.net/) for easier matrices handling.
 
 ## Build and start a server on port 3000
 
