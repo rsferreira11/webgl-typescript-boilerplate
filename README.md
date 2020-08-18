@@ -3,7 +3,7 @@
 Focus in what matters! WebGL Boilerplate using Typescript transpiled by babel.
 
 It supports:
-- Rollup for module bundler.
+- [Rollup](https://rollupjs.org/guide/en/) for module bundler.
 - Minified bundle on release mode.
 - Decidated testing server.
 - all images are bundled as url.
