@@ -67,6 +67,8 @@ const globalPlugins = [
       '**/*.jpeg',
       '**/*.jpg',
       '**/*.webp',
+      '**/*.obj',
+      '**/*.mtl',
     ],
     limit: 0, // Limit 0 means that no image will be bundled as base64 inside the js bundle
     // destDir: CONFIG.buildPath + '/static/',
