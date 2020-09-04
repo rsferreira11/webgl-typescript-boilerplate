@@ -52,10 +52,10 @@ export function loadObjFile(objFileUrl: string, materialFilesUrls: string[], cb:
       });
     }
 
-    const lines = texts[0].split("\r\n");
+    const lines = texts[0].split("\n");
 
     for (let i = 0; i < lines.length; i++) {
-      const lineString = lines[i].replace(/\s+/g, " ");
+      const lineString = lines[i].trim().replace(/\s+/g, " ");
       const words = lineString.split(" ");
 
       switch(words[0]) {
@@ -81,9 +81,11 @@ export function loadObjFile(objFileUrl: string, materialFilesUrls: string[], cb:
           }
 
           // Each group of 3 values after f means you have a triangle
-          // so if you have "f 1 2 3 4" you have 2 triangles (1 2 3, 2 3 4)
+          // so if you have "f 1 2 3 4" you have 2 triangles (1 2 3, 1 3 4)
           for (let j = 1; j < words.length - 2; j++) {
-            model[currentGeometry].verticesCompressed.push(Number(words[j]) - 1) // 1 based to 0 based
+            model[currentGeometry].verticesCompressed.push(Number(words[1]) - 1) // 1 based to 0 based
+            model[currentGeometry].verticesCompressed.push(Number(words[j + 1]) - 1) // 1 based to 0 based
+            model[currentGeometry].verticesCompressed.push(Number(words[j + 2]) - 1) // 1 based to 0 based
           }
           break;
       }
@@ -111,13 +113,13 @@ export function loadObjFile(objFileUrl: string, materialFilesUrls: string[], cb:
 }
 
 function getMaterialsFromText(text: string): materialType[] {
-  const lines = text.split("\r\n");
+  const lines = text.split("\n");
 
   const materials: materialType[] = [];
   let currentMaterial: materialType = {} as materialType;
 
   for (let i = 0; i < lines.length; i++) {
-    const lineString = lines[i].replace(/\s+/g, " ");
+    const lineString = lines[i].trim().replace(/\s+/g, " ");
     const words = lineString.split(" ");
 
     switch(words[0]) {
