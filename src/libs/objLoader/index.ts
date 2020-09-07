@@ -29,7 +29,8 @@ export function loadObjFile(objFileUrl: string, materialFilesUrls: string[], cb:
 
     const verticesCompressed: Float32Array[] = [];
     let currentGeometry: "triangles" | "lines" | "points";
-    let currentMaterialName = "";
+    const materialToFaceMap: { [key: number]: string } = {};
+    let currentMaterialName: string = "";
 
     const model: any = {
       name: "",
@@ -76,16 +77,18 @@ export function loadObjFile(objFileUrl: string, materialFilesUrls: string[], cb:
         case "f":
           currentGeometry = "triangles";
 
-          if (model[currentGeometry].materialName == "") {
-            model[currentGeometry].materialName = currentMaterialName;
+          if (currentMaterialName !== "") {
+            materialToFaceMap[model.triangles.verticesCompressed.length] = currentMaterialName;
+
+            currentMaterialName = "";
           }
 
           // Each group of 3 values after f means you have a triangle
           // so if you have "f 1 2 3 4" you have 2 triangles (1 2 3, 1 3 4)
           for (let j = 1; j < words.length - 2; j++) {
-            model[currentGeometry].verticesCompressed.push(Number(words[1]) - 1) // 1 based to 0 based
-            model[currentGeometry].verticesCompressed.push(Number(words[j + 1]) - 1) // 1 based to 0 based
-            model[currentGeometry].verticesCompressed.push(Number(words[j + 2]) - 1) // 1 based to 0 based
+            model.triangles.verticesCompressed.push(Number(words[1]) - 1) // 1 based to 0 based
+            model.triangles.verticesCompressed.push(Number(words[j + 1]) - 1) // 1 based to 0 based
+            model.triangles.verticesCompressed.push(Number(words[j + 2]) - 1) // 1 based to 0 based
           }
           break;
       }
@@ -94,6 +97,7 @@ export function loadObjFile(objFileUrl: string, materialFilesUrls: string[], cb:
     const triangles = model.triangles
     triangles.vertices = new Float32Array(triangles.verticesCompressed.length * 3);
     triangles.colors = new Float32Array(triangles.verticesCompressed.length * 3);
+    currentMaterialName = "";
 
     triangles.verticesCompressed.forEach((vertexIndex: number, index: number) => {
       const multIndex = index * 3;
@@ -101,7 +105,11 @@ export function loadObjFile(objFileUrl: string, materialFilesUrls: string[], cb:
       triangles.vertices[multIndex + 1] = verticesCompressed[vertexIndex][1];
       triangles.vertices[multIndex + 2] = verticesCompressed[vertexIndex][2];
 
-      const currentColor = model.materials[triangles.materialName].Kd;
+      if (materialToFaceMap[index] != null) {
+        currentMaterialName = materialToFaceMap[index];
+      }
+
+      const currentColor = model.materials[currentMaterialName].Kd;
 
       triangles.colors[multIndex + 0] = currentColor[0];
       triangles.colors[multIndex + 1] = currentColor[1];

@@ -1,7 +1,7 @@
 import './main.css';
 
-import cubeUrl from './models/cube/cube.obj';
-import cubeMaterialUrl from './models/cube/model_cube.mtl';
+import cubeUrl from './models/robot/robotBase.obj';
+import cubeMaterialUrl from './models/robot/robotBase.mtl';
 
 import vertexShaderCode from './shaders/example.vert';
 import fragmentShaderCode from './shaders/example.frag';
@@ -103,7 +103,7 @@ loadObjFile(cubeUrl, [ cubeMaterialUrl ], (err, data) => {
 
   const projectionMatrix = mat4.create();
 
-  // mat4.ortho(projectionMatrix, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+//   mat4.ortho(projectionMatrix, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
   mat4.perspective(
     projectionMatrix,
     75 * Math.PI/180,
@@ -115,20 +115,25 @@ loadObjFile(cubeUrl, [ cubeMaterialUrl ], (err, data) => {
   const mvMatrix = mat4.create();
   const mvpMatrix = mat4.create();
 
-  mat4.translate(modelMatrix, modelMatrix, [0, 0, 0]);
+  mat4.translate(modelMatrix, modelMatrix, [0, 0, -10]);
   mat4.translate(viewMatrix, viewMatrix, [0, 0, 1.5]);
   mat4.invert(viewMatrix, viewMatrix);
 
+    mat4.rotateZ(modelMatrix, modelMatrix, Math.PI / 16);
+    mat4.rotateX(modelMatrix, modelMatrix, Math.PI / 16);
+
+    let count = 0;
+
   function renderStage() {
     mat4.rotateY(modelMatrix, modelMatrix, Math.PI / 200);
-    mat4.rotateZ(modelMatrix, modelMatrix, Math.PI / 400);
-    mat4.rotateX(modelMatrix, modelMatrix, Math.PI / 800);
+    // mat4.rotateZ(modelMatrix, modelMatrix, Math.PI / 400);
+    // mat4.rotateX(modelMatrix, modelMatrix, Math.PI / 800);
 
     mat4.multiply(mvMatrix, viewMatrix, modelMatrix);
     mat4.multiply(mvpMatrix, projectionMatrix, mvMatrix);
     gl!.uniformMatrix4fv(uniformLocations.matrix, false, mvpMatrix);
 
-    gl!.drawArrays(gl!.TRIANGLES, 0, data.triangles.vertices.length / 3);
+    gl!.drawArrays(gl!.LINES, 0, Math.min(++count, (data.triangles.vertices.length / 3)));
     requestAnimationFrame(renderStage);
   }
 
