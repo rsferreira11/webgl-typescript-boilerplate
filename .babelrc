@@ -1,9 +1,13 @@
 {
   "presets": [
-    "@babel/env",
+    [ "@babel/env", {
+      "targets": [ "defaults" ]
+    } ],
     "@babel/typescript"
   ],
   "plugins": [
+    "@babel/plugin-transform-runtime",
+    "@babel/plugin-transform-regenerator",
     "@babel/proposal-class-properties",
     "@babel/proposal-object-rest-spread"
   ]

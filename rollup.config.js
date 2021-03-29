@@ -55,7 +55,7 @@ const globalPlugins = [
   // Compile TypeScript/JavaScript files
   babel({
     extensions,
-    babelHelpers: 'bundled',
+    babelHelpers: 'runtime',
     include: ['src/**/*'],
     sourceMaps: true,
   }),

@@ -1,212 +1,200 @@
 import './main.css';
 
-import testTexture from './images/default_tree.png';
-
-import { imageImportTest } from './examples/imageImportTest';
+import { createProgramFromShadersString, resizeCanvasToDisplaySize } from './utils/shaderHelpers';
 import vertexShaderCode from './shaders/example.vert';
 import fragmentShaderCode from './shaders/example.frag';
 
-import { mat4 } from 'gl-matrix';
+import sampleImage from './images/test.jpg';
 
-imageImportTest();
+import { mat3 } from 'gl-matrix';
 
-function loadTexture(gl: WebGLRenderingContext, url: string) {
+function logMatrix(mat: mat3) {
+  console.log(`
+${mat[0]}, ${mat[1]}, ${mat[2]},
+${mat[3]}, ${mat[4]}, ${mat[5]},
+${mat[6]}, ${mat[7]}, ${mat[8]},
+  `)
+}
+
+function loadImagePromise(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve) => {
+    const image = new Image();
+
+    image.src = url;
+    image.onload = () => {
+      resolve(image);
+    };
+  });
+}
+
+function createAndSetupTexture(gl: WebGL2RenderingContext): WebGLTexture {
+  // Create a texture.
   const texture = gl.createTexture();
-  const image = new Image();
 
-  image.onload = () => {
-      gl.bindTexture(gl.TEXTURE_2D, texture);
+  if (!texture) {
+    throw new Error('No texture.');
+  }
 
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  // Bind it to texture unit 0' 2D bind point
+  gl.bindTexture(gl.TEXTURE_2D, texture);
 
-      gl.generateMipmap(gl.TEXTURE_2D);
-  };
+  // Set the parameters so we don't need mips and so we're not filtering
+  // and we don't repeat at the edges
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-  image.src = url;
   return texture;
 }
 
-(function() {
+(async function () {
   const canvas = document.querySelector('canvas');
 
-  if (!canvas)  {
+  if (!canvas) {
     throw new Error('Canvas not found');
   }
 
-  const gl = canvas.getContext('webgl');
+  const gl = canvas.getContext('webgl2');
 
   if (!gl) {
     throw new Error('WebGL not supported');
   }
 
-  //#region Vertex Data
-  const vertexData = [
-    // Front
-    0.5, 0.5, 0.5,
-    0.5, -.5, 0.5,
-    -.5, 0.5, 0.5,
-    -.5, 0.5, 0.5,
-    0.5, -.5, 0.5,
-    -.5, -.5, 0.5,
+  const image = await loadImagePromise(sampleImage);
 
-    // Left
-    -.5, 0.5, 0.5,
-    -.5, -.5, 0.5,
-    -.5, 0.5, -.5,
-    -.5, 0.5, -.5,
-    -.5, -.5, 0.5,
-    -.5, -.5, -.5,
+  const program = createProgramFromShadersString(gl, vertexShaderCode, fragmentShaderCode);
 
-    // Back
-    -.5, 0.5, -.5,
-    -.5, -.5, -.5,
-    0.5, 0.5, -.5,
-    0.5, 0.5, -.5,
-    -.5, -.5, -.5,
-    0.5, -.5, -.5,
+  var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+  var texCoordAttributeLocation = gl.getAttribLocation(program, "a_texCoord");
 
-    // Right
-    0.5, 0.5, -.5,
-    0.5, -.5, -.5,
-    0.5, 0.5, 0.5,
-    0.5, 0.5, 0.5,
-    0.5, -.5, 0.5,
-    0.5, -.5, -.5,
+  // lookup uniforms
+  var imageLocation = gl.getUniformLocation(program, "u_image");
 
-    // Top
-    0.5, 0.5, 0.5,
-    0.5, 0.5, -.5,
-    -.5, 0.5, 0.5,
-    -.5, 0.5, 0.5,
-    0.5, 0.5, -.5,
-    -.5, 0.5, -.5,
+  // Create a vertex array object (attribute state)
+  var vao = gl.createVertexArray();
 
-    // Bottom
-    0.5, -.5, 0.5,
-    0.5, -.5, -.5,
-    -.5, -.5, 0.5,
-    -.5, -.5, 0.5,
-    0.5, -.5, -.5,
-    -.5, -.5, -.5,
-  ];
-  //#endregion
+  // and make it the one we're currently working with
+  gl.bindVertexArray(vao);
 
-  function repeat(numberOfTimes: number, pattern: number[]) {
-    return [ ...Array(numberOfTimes) ]
-      .reduce(acc => acc.concat(pattern), []);
-  }
+  // Create a buffer and put a single pixel space rectangle in
+  // it (2 triangles)
+  var positionBuffer = gl.createBuffer();
 
-  const uvData = repeat(6, [
-      1, 1, // top right
-      1, 0, // bottom right
-      0, 1, // top left
+  // Turn on the attribute
+  gl.enableVertexAttribArray(positionAttributeLocation);
 
-      0, 1, // top left
-      1, 0, // bottom right
-      0, 0  // bottom left
-  ]);
-
-  //#region buffers
-  const positionBuffer = gl.createBuffer();
+  // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexData), gl.STATIC_DRAW);
 
-  const uvBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvData), gl.STATIC_DRAW);
-  //#endregion
+  // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+  var size = 2;          // 2 components per iteration
+  var type = gl.FLOAT;   // the data is 32bit floats
+  var normalize = false; // don't normalize the data
+  var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+  var offset = 0;        // start at the beginning of the buffer
+  gl.vertexAttribPointer(
+      positionAttributeLocation, size, type, normalize, stride, offset);
 
-  const image = loadTexture(gl, testTexture);
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, image);
+  // Set a rectangle the same size as the image.
+  setRectangle(gl, 0, 0, 1, 1);
 
-  //#region Vertex shader
-  const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+  // provide texture coordinates for the rectangle.
+  var texCoordBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+      0.0,  0.0,
+      1.0,  0.0,
+      0.0,  1.0,
+      0.0,  1.0,
+      1.0,  0.0,
+      1.0,  1.0,
+  ]), gl.STATIC_DRAW);
 
-  if (!vertexShader) {
-    return;
-  }
+  // Turn on the attribute
+  gl.enableVertexAttribArray(texCoordAttributeLocation);
 
-  gl.shaderSource(vertexShader, vertexShaderCode);
-  gl.compileShader(vertexShader);
-  //#endregion
+  // Tell the attribute how to get data out of texCoordBuffer (ARRAY_BUFFER)
+  var size = 2;          // 2 components per iteration
+  var type = gl.FLOAT;   // the data is 32bit floats
+  var normalize = false; // don't normalize the data
+  var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+  var offset = 0;        // start at the beginning of the buffer
+  gl.vertexAttribPointer(
+      texCoordAttributeLocation, size, type, normalize, stride, offset);
 
-  //#region Fragment shader
-  const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+  createAndSetupTexture(gl);
 
-  if (!fragmentShader) {
-    return;
-  }
+  // make unit 0 the active texture uint
+  // (ie, the unit all other texture commands will affect
+  gl.activeTexture(gl.TEXTURE0 + 0);
 
-  gl.shaderSource(fragmentShader, fragmentShaderCode);
-  gl.compileShader(fragmentShader);
-  //#endregion
+  // Upload the image into the texture.
+  var mipLevel = 0;               // the largest mip
+  var internalFormat = gl.RGBA;   // format we want in the texture
+  var srcFormat = gl.RGBA;        // format of data we are supplying
+  var srcType = gl.UNSIGNED_BYTE; // type of data we are supplying
+  gl.texImage2D(gl.TEXTURE_2D,
+                mipLevel,
+                internalFormat,
+                srcFormat,
+                srcType,
+                image);
 
-  //#region Program
-  const program = gl.createProgram();
+  resizeCanvasToDisplaySize(canvas);
 
-  if (!program) {
-    return;
-  }
+  // Tell WebGL how to convert from clip space to pixels
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.linkProgram(program);
-  //#endregion
+  // Clear the canvas
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  //#region Bind Buffers
-  const positionLocation = gl.getAttribLocation(program, 'position');
-  gl.enableVertexAttribArray(positionLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
-
-  const uvLocation = gl.getAttribLocation(program, `uv`);
-  gl.enableVertexAttribArray(uvLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
-  gl.vertexAttribPointer(uvLocation, 2, gl.FLOAT, false, 0, 0);
-  //#endregion
-
+  // Tell it to use our program (pair of shaders)
   gl.useProgram(program);
-  gl.enable(gl.DEPTH_TEST);
 
-  const uniformLocations = {
-    matrix: gl.getUniformLocation(program, 'matrix'),
-    textureID: gl.getUniformLocation(program, 'textureID'),
-  };
+  // Bind the attribute/buffer set we want.
+  gl.bindVertexArray(vao);
 
-  gl.uniform1i(uniformLocations.textureID, 0);
+  const resolutionLocation = gl.getUniformLocation(program, "u_matrix");
+  const matrix = [
+    1,  0,  0,
+    0,  -1,  0,
+    -1,  1,  1,
+  ] as mat3;
+  logMatrix(matrix);
 
-  const modelMatrix = mat4.create();
-  const viewMatrix = mat4.create();
+  // mat3.projection(matrix, canvas.clientWidth, canvas.clientHeight);
 
-  const projectionMatrix = mat4.create();
-  mat4.perspective(
-    projectionMatrix,
-    75 * Math.PI/180,
-    canvas.width/canvas.height,
-    1e-4,
-    1e4,
-  );
+  // Pass in the canvas resolution so we can convert from
+  // pixels to clipspace in the shader
+  gl.uniformMatrix3fv(resolutionLocation, false, matrix);
 
-  const mvMatrix = mat4.create();
-  const mvpMatrix = mat4.create();
+  // Tell the shader to get the texture from texture unit 0
+  gl.uniform1i(imageLocation, 0);
 
-  mat4.translate(modelMatrix, modelMatrix, [0, 0, -2]);
-  mat4.translate(viewMatrix, viewMatrix, [0, 0, 1.5]);
-  mat4.invert(viewMatrix, viewMatrix);
+  // Bind the position buffer so gl.bufferData that will be called
+  // in setRectangle puts data in the position buffer
+  // gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-  function draw() {
-    mat4.rotateY(modelMatrix, modelMatrix, Math.PI / 200);
-    mat4.rotateZ(modelMatrix, modelMatrix, Math.PI / 400);
-    mat4.rotateX(modelMatrix, modelMatrix, Math.PI / 800);
-
-
-    mat4.multiply(mvMatrix, viewMatrix, modelMatrix);
-    mat4.multiply(mvpMatrix, projectionMatrix, mvMatrix);
-    gl!.uniformMatrix4fv(uniformLocations.matrix, false, mvpMatrix);
-    gl!.drawArrays(gl!.TRIANGLES, 0, vertexData.length / 3);
-    requestAnimationFrame(draw);
-  }
-
-  draw();
+  // Draw the rectangle.
+  var primitiveType = gl.TRIANGLES;
+  var offset = 0;
+  var count = 6;
+  gl.drawArrays(primitiveType, offset, count);
 })();
+
+function setRectangle(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number) {
+  var x1 = x;
+  var x2 = x + width;
+  var y1 = y;
+  var y2 = y + height;
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+     x1, y1,
+     x2, y1,
+     x1, y2,
+     x1, y2,
+     x2, y1,
+     x2, y2,
+  ]), gl.STATIC_DRAW);
+}
